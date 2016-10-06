@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.persistence.LayerBoardMapper">
+
+<select id="selectBoard" resultType="board2" parameterType="page">
+
+	select 	bno,gno,gorder,depth,parent,title,writer,viewcnt,delflag,regdate,updatedate
+	from	(
+				select rownum as rnum, sort.*
+				from	(
+									select * 
+									from tbl_board2
+									where	delflag = 'N'
+									<if test="searchWord !=null and searchWord !=''">
+									<trim prefix="AND (" prefixOverrides="or" suffix=")">
+										<if test="stitle !=null and stitle!=''">
+											or title like '%' || #{searchWord} || '%'
+										</if>
+										<if test="scontent !=null and scontent!=''">
+											or content like '%' || #{searchWord} || '%'
+										</if>
+										<if test="swriter !=null and swriter!=''">
+											or writer like '%' || #{searchWord} || '%'
+										</if>
+									</trim>
+									</if>
+<![CDATA[
+									order 	by	gno	desc , gorder
+
+									
+						) sort where rownum <= #{end}
+			) 
+				where 	rnum >= #{start}
+]]>
+</select>
+
+<select id="getTotalCount" resultType="int">
+	select	 count(*)
+	from	tbl_board2
+</select>
+<select id="getSearchCount" resultType="int" parameterType="page">
+	select	count(*)
+	/*+INDEX_DESC(tbl_board2,pk_board2)*/
+	from	tbl_board2
+	where	delflag = 'N'
+	<if test="searchWord !=null and searchWord !=''">
+		<trim prefix="AND (" prefixOverrides="or" suffix=")">
+		
+			<if test="stitle !=null and stitle!=''">
+				or title like '%' || #{searchWord} || '%'
+			</if>
+			<if test="scontent !=null and scontent!=''">
+				or content like '%' || #{searchWord} || '%'
+			</if>
+			<if test="swriter !=null and swriter!=''">
+				or writer like '%' || #{searchWord} || '%'
+			</if>
+		</trim>
+	</if>
+</select>
+<select id="selectOneBoard" parameterType="int" resultType="board2">
+	select	*
+	from 	tbl_board2
+	where	bno = #{bno}
+</select>
+<insert id="insertBoard" parameterType="board2">
+	<selectKey  keyProperty="bno" order="BEFORE" resultType="int">
+		select seq_board2.nextVal from dual
+	</selectKey>
+	<choose>
+		<when test="parent == 0">
+			insert into tbl_board2 (bno,gno,title,writer,content)
+			values (${bno},seq_board2_group.nextVal,#{title},#{writer},#{content})
+		</when>
+		<otherwise>
+			insert into tbl_board2 
+			(bno,gno,title,writer,content,depth,parent,gorder)
+			values 
+			(#{bno},#{gno},#{title},#{writer},#{content},#{depth}
+			,#{parent},#{gorder})
+		</otherwise>
+	</choose>
+	
+</insert>
+<update id="deleteBoard" parameterType="int">
+	update	tbl_board2
+	set		delflag ='Y'
+	where	bno = #{bno}
+
+</update>
+<update id="updateBoard" parameterType="board2">
+	update	tbl_board2
+	set		title=#{title},writer=#{title},content=#{content},updatedate = sysdate
+	where	bno= #{bno}
+</update>
+<update id="updateGorder" parameterType="board2">
+	update	tbl_board2
+	set		gorder = gorder+1
+	<![CDATA[
+	where	gno= #{gno} and gorder >= #{gorder}
+	]]>		
+</update>
+<select id="maxGorder" parameterType="board2" resultType="int">
+	select 	nvl(max(gorder),0)
+	from	tbl_board2
+	where	parent=#{parent}
+</select>
+<insert id="addFile">
+	insert into tbl_file(fullname,bno) values(#{fullname},#{bno})
+</insert>
+<select id="getFile" resultType="string">
+	select fullname from tbl_file where bno = #{bno}
+</select>
+<delete id="deleteFile">
+	delete from tbl_file where bno = #{bno}
+</delete>
+</mapper>

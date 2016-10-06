@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.persistence.BoardMapper">
+
+<select id="selectBoard" resultType="board">
+
+		select t.*
+ 		  from (select a.*, rownum as rnum
+         	      from (select *
+                          from tbl_board2
+                         where delflag = 'N'
+                         <choose>
+                         	<when test="searchWord == null">
+                         	</when>
+                         	<otherwise>
+                         		<trim prefix="and (" prefixOverrides="or" suffix=")" >
+									<if test="stitle != null" >
+										 or title like '%' || #{searchWord} || '%'
+									</if>
+									<if test="scontent != null" >
+										 or content like '%' || #{searchWord} || '%'
+									</if>
+									<if test="swriter != null" >
+										 or writer like '%' || #{searchWord} || '%'
+									</if>
+                         		</trim>
+                         	</otherwise>
+                         </choose>
+                         <![CDATA[
+                         and rownum <= #{end}
+                         order by gno desc, gorder) a) t
+        				 
+        	where rnum >= #{start}			 
+		 	]]>
+</select>
+<!-- <select id="selectBoard" resultType="board" parameterType="page"> -->
+
+<!-- 	select 	bno,title,writer,viewcnt,delflag,regdate,updatedate -->
+<!-- 	from	( -->
+<!-- 				select rownum rnum, sort.* -->
+<!-- 				from	( -->
+<!-- 							select 	* -->
+<!-- 							from	( -->
+<!-- 									select *  -->
+<!-- 									from tbl_board -->
+<!-- 									<if test="searchWord !=null and searchWord !=''"> -->
+<!-- 									where	bno != bno -->
+<!-- 										<if test="sTitle !=null and sTitle!=''"> -->
+<!-- 											or title like '%' || #{searchWord} || '%' -->
+<!-- 										</if> -->
+<!-- 										<if test="sContent !=null and sContent!=''"> -->
+<!-- 											or content like '%' || #{searchWord} || '%' -->
+<!-- 										</if> -->
+<!-- 										<if test="sWriter !=null and sWriter!=''"> -->
+<!-- 											or writer like '%' || #{searchWord} || '%' -->
+<!-- 										</if> -->
+<!-- 									</if> -->
+<!-- 									) -->
+<!-- 							order 	by	bno	desc -->
+<!-- 						) sort -->
+<!-- 			)  -->
+<!-- <![CDATA[ -->
+<!--  	where 	rnum >= #{start} --> 
+<!--  	and		rnum <= #{end} --> 
+<!--  ]]> --> 
+<!-- </select> -->
+<select id="getTotalCount" resultType="int">
+	select	 count(*)
+	from	tbl_board
+</select>
+<select id="getSearchCount" resultType="int">
+	select	count(*)
+	from	tbl_board
+	<if test="searchWord !=null and searchWord !=''">
+	where	bno != bno
+			<if test="sTitle !=null and sTitle!=''">
+				or title like '%' || #{searchWord} || '%'
+			</if>
+			<if test="sContent !=null and sContent!=''">
+				or content like '%' || #{searchWord} || '%'
+			</if>
+			<if test="sWriter !=null and sWriter!=''">
+				or writer like '%' || #{searchWord} || '%'
+			</if>
+	</if>
+</select>
+<select id="selectOneBoard" parameterType="int" resultType="board">
+	select	*
+	from 	tbl_board
+	where	bno = #{bno}
+</select>
+<insert id="insertBoard" parameterType="board">
+	insert into tbl_board (bno,title,writer,content)
+	values (seq_board.nextVal,#{title},#{writer},#{content})
+	
+</insert>
+<update id="updateBoard" parameterType="board">
+	update	tbl_board
+	set		title=#{title},writer=#{title},content=#{content},updatedate = sysdate
+	where	bno= #{bno}
+</update>
+    
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.persistence.CommentMapper">
+
+	<select id="list" resultType="comment" parameterType="int">
+		select	*
+		from	tbl_comment
+		where	bno = #{bno}
+		order	by	cno desc
+	</select>
+	<insert id="regist" parameterType="comment">
+		insert into tbl_comment(cno,bno,content,writer)
+		values(seq_comment.nextVal,#{bno},#{content},#{writer})
+	</insert>
+	<update id="update" parameterType="comment">
+		update 	tbl_comment
+		set		content = #{content}, updatedate = sysdate
+		where	cno = #{cno}
+	</update>
+	<delete id="delete" parameterType="int">
+		delete
+		from	tbl_comment
+		where	cno = #{cno}
+	</delete>
+	<select id="listPage" resultType="comment" parameterType="map">
+		select 	*
+		from	(
+					select rownum rn, a.* 
+					from (select * from tbl_comment where bno = #{bno} order by cno desc ) a
+					<![CDATA[
+					where 	rownum <= #{page.end}
+		)
+		where		rn >= #{page.start}
+			]]>
+	</select>
+	<select id="count" resultType="int">
+		select count(bno) from tbl_comment where bno=#{bno}
+	</select>
+</mapper>
